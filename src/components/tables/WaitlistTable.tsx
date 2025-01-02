@@ -18,6 +18,7 @@ interface WaitlistTableProps {
     email: string;
     joinedDate: string;
     createdAt: string;
+
   }[];
 }
 
@@ -57,7 +58,7 @@ const WaitlistTable = ({ data }: WaitlistTableProps) => {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
-            <TableHead>Phone</TableHead>
+            {/* <TableHead>Phone</TableHead> */}
             <TableHead>Date</TableHead>
           </TableRow>
         </TableHeader>
@@ -66,7 +67,7 @@ const WaitlistTable = ({ data }: WaitlistTableProps) => {
             <TableRow key={item.id}>
               <TableCell>{item.name}</TableCell>
               <TableCell>{item.email}</TableCell>
-              <TableCell>{item.phone}</TableCell>
+              {/* <TableCell>{item.phone}</TableCell> */}
               <TableCell>
                 {new Date(item.createdAt).toLocaleDateString()}
               </TableCell>
