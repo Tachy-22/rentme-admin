@@ -1,21 +1,24 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "./button";
+
 import {
   HousePlug,
   Menu,
   X,
   Home,
-  Search,
+  // Search,
   Building2,
-  MessageSquare,
-  Bell,
-  Settings,
-  LogOut,
+  // MessageSquare,
+  // Bell,
+  // Settings,
+  // LogOut,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Button } from "../ui/button";
+// import { Skeleton } from "../ui/skeleton";
 // import { removeAuthToken } from "@/lib/utils";
 // import { signOut } from "@/actions/auth";
 // import { useAuth } from "@/hooks/useAuth";
@@ -42,35 +45,35 @@ export function Navigation() {
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const {
-    isAuthenticated,
-    loading: isAuthStatusLoading,
-    removeAdminSession,
-  } = useAuth();
+  // const {
+  //   isAuthenticated,
+  //   loading: isAuthStatusLoading,
+  //   removeAdminSession,
+  // } = useAuth();
 
   // const { user } = useSelector((state: RootState) => state.userSlice);
 
   // const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const handleSignOut = async () => {
-    setIsSigningOut(true);
-    try {
-      await signOut();
-      removeAdminSession();
-      removeAuthToken();
-      setIsMobileMenuOpen(false);
-      router.push("/");
-    } finally {
-      setIsSigningOut(false);
-    }
-  };
+  // const handleSignOut = async () => {
+  //   setIsSigningOut(true);
+  //   try {
+  //     await signOut();
+  //     removeAdminSession();
+  //     removeAuthToken();
+  //     setIsMobileMenuOpen(false);
+  //     router.push("/");
+  //   } finally {
+  //     setIsSigningOut(false);
+  //   }
+  // };
 
-  const handleProfileClick = () => {
-    if (user?.id) {
-      router.push(`/${user.id}/dashboard`);
-      setIsMobileMenuOpen(false);
-    }
-  };
+  // const handleProfileClick = () => {
+  //   if (user?.id) {
+  //     router.push(`/${user.id}/dashboard`);
+  //     setIsMobileMenuOpen(false);
+  //   }
+  // };
 
   const menuItems = [
     {
@@ -80,19 +83,16 @@ export function Navigation() {
       showAlways: true,
     },
     {
-      name: "Upload",
-      href: "/upload",
+      name: "property",
+      href: "/property",
       icon: Building2,
       showAlways: true,
       badge: 2, // You can make this dynamic based on unread messages
     },
-    
   ];
 
   // Only show items that should always be shown or when authenticated
-  const visibleMenuItems = menuItems.filter(
-    (item) => item.showAlways || isAuthenticated
-  );
+  const visibleMenuItems = menuItems.filter((item) => item.showAlways);
 
   return (
     <>
@@ -126,48 +126,36 @@ export function Navigation() {
           </Link>
 
           <div className="flex items-center gap-2">
-            {isAuthStatusLoading ? (
-              <div className="flex items-center gap-2">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton
-                    key={i}
-                    className="h-9 w-9 rounded-full bg-white/20"
-                  />
+            <TooltipProvider>
+              <div className="flex items-center gap-1 z-[5000]">
+                {visibleMenuItems.map((item) => (
+                  <Tooltip key={item.name}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={pathname === item.href ? "secondary" : "ghost"}
+                        size="icon"
+                        className={` ${
+                          pathname === item.href
+                            ? "text-blue-950"
+                            : "!text-white"
+                        } relative   hover:bg-white/20   `}
+                        onClick={() => router.push(item.href)}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        {item.badge && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
+                            {item.badge}
+                          </span>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{item.name}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 ))}
-              </div>
-            ) : (
-              <TooltipProvider>
-                <div className="flex items-center gap-1 z-[5000]">
-                  {visibleMenuItems.map((item) => (
-                    <Tooltip key={item.name}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={
-                            pathname === item.href ? "secondary" : "ghost"
-                          }
-                          size="icon"
-                          className={` ${
-                            pathname === item.href
-                              ? "text-blue-950"
-                              : "!text-white"
-                          } relative   hover:bg-white/20   `}
-                          onClick={() => router.push(item.href)}
-                        >
-                          <item.icon className="h-5 w-5" />
-                          {item.badge && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
-                              {item.badge}
-                            </span>
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{item.name}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
 
-                  {isAuthenticated && (
+                {/* {isAuthenticated && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -205,10 +193,9 @@ export function Navigation() {
                     >
                       Sign In
                     </Button>
-                  )}
-                </div>
-              </TooltipProvider>
-            )}
+                  )} */}
+              </div>
+            </TooltipProvider>
 
             {/* Remove the separate sign out button since it's now in the dropdown */}
           </div>
@@ -245,72 +232,21 @@ export function Navigation() {
                 </div>
 
                 <div className="py-6 bg-white text-black h-full">
-                  {isAuthStatusLoading ? (
-                    <div className="space-y-4 px-6">
-                      {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-12 w-full bg-white/10" />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-white text-black h-full">
-                      {isAuthenticated && (
-                        <div
-                          className="flex items-center gap-3 px-6 py-4 hover:bg-black/5 cursor-pointer"
-                          onClick={handleProfileClick}
-                        >
-                          <Avatar className="h-12 w-12 text-black">
-                            <AvatarImage src={user?.image} alt={user?.name} />
-                            <AvatarFallback>{user?.name?.[0]}</AvatarFallback>
-                          </Avatar>
-                          <div className="space-y-1">
-                            <h3 className="font-medium leading-none">
-                              {user?.name}
-                            </h3>
-                          </div>
-                        </div>
-                      )}
-                      {menuItems.map((item) => (
-                        <Link
-                          key={item.name}
-                          href={item.href}
-                          className={`flex items-center px-6 py-3 text-black hover:text-black hover:bg-black/10 transition-colors ${
-                            pathname === item.href
-                              ? "bg-black/5 font-medium"
-                              : ""
-                          }`}
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <item.icon className="h-5 w-5 mr-3" />
-                          {item.name}
-                        </Link>
-                      ))}
-                      <hr className="my-4 border-white/10 mx-6" />
-                      {isAuthenticated ? (
-                        <Button
-                          variant="outline"
-                          className="w-[calc(100%-48px)] mx-6 text-black  hover:bg-black/10 bg-white hover:text-black"
-                          onClick={() => {
-                            // setIsMobileMenuOpen(false);
-                            handleSignOut();
-                          }}
-                          disabled={isSigningOut}
-                        >
-                          {isSigningOut ? "Signing out..." : "Sign Out"}
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="default"
-                          className="w-[calc(100%-48px)] mx-6 bg-black text-white hover:bg-black/90"
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            router.push("/login");
-                          }}
-                        >
-                          Sign In
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                  <div className="bg-white text-black h-full">
+                    {menuItems.map((item) => (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={`flex items-center px-6 py-3 text-black hover:text-black hover:bg-black/10 transition-colors ${
+                          pathname === item.href ? "bg-black/5 font-medium" : ""
+                        }`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <item.icon className="h-5 w-5 mr-3" />
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             </>

@@ -1,10 +1,29 @@
-import Dashboard from '@/component/Dashboard'
-import React from 'react'
+import Dashboard from "@/components/layout/Dashboard";
+import { fetchCollection } from "@/actions/fetchCollection";
+import React from "react";
 
 const page = async () => {
-  return (
-    <div><Dashboard/></div>
-  )
-}
+  const waitlistData = await fetchCollection("waitlist");
 
-export default page
+  if ("code" in waitlistData) {
+    return <div>Error loading data</div>;
+  }
+
+  return (
+    <div className="container mx-auto py-10 mt-[3rem]">
+      <Dashboard
+        waitlistData={
+          waitlistData.items as {
+            id: number;
+            name: string;
+            email: string;
+            joinedDate: string;
+            createdAt: string;
+          }[]
+        }
+      />
+    </div>
+  );
+};
+
+export default page;
