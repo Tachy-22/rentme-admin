@@ -1,10 +1,6 @@
 "use client";
 import React from "react";
-// import { MapContainer, TileLayer, Marker } from "react-leaflet";
-// // import { geocode } from "nominatim-browser";
-// import { LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
-//import L from "leaflet";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -31,25 +27,16 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileInput, FileMetadata } from "@/components/ui/FileInput";
-// import { Loader2 } from "lucide-react";
-// import {
-//   CommandEmpty,
-//   CommandGroup,
-//   CommandInput,
-//   CommandItem,
-//   CommandList,
-//   Command,
-// } from "@/components/ui/command";
-
-// Fix Leaflet default marker icon
-// const icon = L.icon({
-//   iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-//   iconRetinaUrl:
-//     "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
-//   shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-//   iconSize: [25, 41],
-//   iconAnchor: [12, 41],
-// });
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon, Plus, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { Rating } from "@/components/ui/rating";
 
 const PROPERTY_TYPES = [
   "Self contained",
@@ -87,6 +74,27 @@ const AMENITIES = [
   { id: "4", name: "Air Conditioning", type: "comfort", icon: "ac" },
   { id: "5", name: "Gym", type: "feature", icon: "gym" },
   { id: "6", name: "Laundry", type: "essential", icon: "laundry" },
+];
+
+const PLACE_TYPES = [
+  "Park",
+  "Shopping",
+  "Restaurant",
+  "School",
+  "Hospital",
+  "Gym",
+  "Market",
+];
+
+const TRANSIT_TYPES = ["Bus", "Metro", "Taxi", "Bike", "Walk"];
+
+const LEASE_TERMS = [
+  "One year minimum lease",
+  "First month rent and security deposit required",
+  "Utilities not included",
+  "No smoking",
+  "Background check required",
+  "Income verification required",
 ];
 
 const formSchema = z.object({
@@ -143,6 +151,23 @@ const formSchema = z.object({
     minLeaseLength: z.coerce.number(),
     maxOccupants: z.coerce.number(),
   }),
+  nearbyPlaces: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        distance: z.string(),
+      })
+    )
+    .optional(),
+  transitOptions: z
+    .array(
+      z.object({
+        type: z.string(),
+        description: z.string(),
+      })
+    )
+    .optional(),
   prices: z.object({
     yearlyPrice: z.coerce.number(),
     leaseLength: z.coerce.number(),
@@ -166,6 +191,7 @@ const PropertyForm = () => {
       description: "",
       type: "",
       price: 0,
+      transitOptions: [],
       location: {
         address: "",
         city: "",
@@ -221,6 +247,28 @@ const PropertyForm = () => {
       },
     },
   });
+
+  const [nearbyPlaces, setNearbyPlaces] = React.useState<
+    { name: string; type: string; distance: string }[]
+  >([]);
+
+  const [transitOptions, setTransitOptions] = React.useState<
+    { type: string; description: string }[]
+  >([]);
+
+  const addNearbyPlace = () => {
+    setNearbyPlaces([
+      ...nearbyPlaces,
+      { name: "", type: PLACE_TYPES[0], distance: "" },
+    ]);
+  };
+
+  const addTransitOption = () => {
+    setTransitOptions([
+      ...transitOptions,
+      { type: TRANSIT_TYPES[0], description: "" },
+    ]);
+  };
 
   // Add this function to update map when coordinates change
   const updateMap = (lat: number, lng: number) => {
@@ -403,20 +451,6 @@ const PropertyForm = () => {
             />
           </div>
         </div>
-        {/* <div className="h-[400px] w-full">
-          <MapContainer
-            center={mapCenter as LatLngExpression}
-            zoom={13}
-            style={{ height: "100%", width: "100%" }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <Marker position={mapCenter} icon={icon} />
-           <MapPreview />
-          </MapContainer>
-        </div> */}
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -823,6 +857,240 @@ const PropertyForm = () => {
             )}
           />
         </div>
+
+        {/* Add Move-in Date with Calendar */}
+        <FormField
+          control={form.control}
+          name="policies.moveInDate"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Move-in Date</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-[240px] pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(new Date(field.value), "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={new Date(field.value)}
+                    onSelect={(date) =>
+                      field.onChange(date?.toISOString().split("T")[0])
+                    }
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Lease Terms */}
+        <FormField
+          control={form.control}
+          name="policies.leaseTerms"
+          render={() => (
+            <FormItem>
+              <FormLabel>Lease Terms</FormLabel>
+              <div className="grid grid-cols-2 gap-4">
+                {LEASE_TERMS.map((term) => (
+                  <FormField
+                    key={term}
+                    control={form.control}
+                    name="policies.leaseTerms"
+                    render={({ field }) => {
+                      const currentValue = Array.isArray(field.value)
+                        ? field.value
+                        : [];
+
+                      return (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={currentValue.includes(term)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  field.onChange([...currentValue, term]);
+                                } else {
+                                  field.onChange(
+                                    currentValue.filter((item) => item !== term)
+                                  );
+                                }
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal">{term}</FormLabel>
+                        </FormItem>
+                      );
+                    }}
+                  />
+                ))}
+              </div>
+            </FormItem>
+          )}
+        />
+
+        {/* Nearby Places */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <FormLabel>Nearby Places</FormLabel>
+            <Button type="button" variant="outline" onClick={addNearbyPlace}>
+              <Plus className="w-4 h-4 mr-2" /> Add Place
+            </Button>
+          </div>
+          {nearbyPlaces.map((_, index) => (
+            <div key={index} className="grid grid-cols-3 gap-4 items-end">
+              <Input
+                placeholder="Place name"
+                value={nearbyPlaces[index].name}
+                onChange={(e) => {
+                  const updated = [...nearbyPlaces];
+                  updated[index].name = e.target.value;
+                  setNearbyPlaces(updated);
+                  form.setValue("nearbyPlaces", updated);
+                }}
+              />
+              <Select
+                value={nearbyPlaces[index].type}
+                onValueChange={(value) => {
+                  const updated = [...nearbyPlaces];
+                  updated[index].type = value;
+                  setNearbyPlaces(updated);
+                  form.setValue("nearbyPlaces", updated);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLACE_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Distance"
+                  value={nearbyPlaces[index].distance}
+                  onChange={(e) => {
+                    const updated = [...nearbyPlaces];
+                    updated[index].distance = e.target.value;
+                    setNearbyPlaces(updated);
+                    form.setValue("nearbyPlaces", updated);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    const updated = nearbyPlaces.filter((_, i) => i !== index);
+                    setNearbyPlaces(updated);
+                    form.setValue("nearbyPlaces", updated);
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Transit Options */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <FormLabel>Getting Around</FormLabel>
+            <Button type="button" variant="outline" onClick={addTransitOption}>
+              <Plus className="w-4 h-4 mr-2" /> Add Transit Option
+            </Button>
+          </div>
+          {transitOptions.map((_, index) => (
+            <div key={index} className="grid grid-cols-2 gap-4 items-end">
+              <Select
+                value={transitOptions[index].type}
+                onValueChange={(value) => {
+                  const updated = [...transitOptions];
+                  updated[index].type = value;
+                  setTransitOptions(updated);
+                  form.setValue("transitOptions", updated);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRANSIT_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Description"
+                  value={transitOptions[index].description}
+                  onChange={(e) => {
+                    const updated = [...transitOptions];
+                    updated[index].description = e.target.value;
+                    setTransitOptions(updated);
+                    form.setValue("transitOptions", updated);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    const updated = transitOptions.filter(
+                      (_, i) => i !== index
+                    );
+                    setTransitOptions(updated);
+                    form.setValue("transitOptions", updated);
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Rating */}
+        <FormField
+          control={form.control}
+          name="rating"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Property Rating</FormLabel>
+              <FormControl>
+                <Rating
+                  value={field.value || 0}
+                  onChange={field.onChange}
+                  max={5}
+                  precision={0.1}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
         <Button type="submit">Add Property</Button>
       </form>
     </Form>

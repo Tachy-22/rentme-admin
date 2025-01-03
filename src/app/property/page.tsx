@@ -13,9 +13,9 @@ const page = async () => {
   }
 
   return (
-    <div className="container mx-auto py-10 space-y-6 mt-[3rem]">
+    <div className="w-full max-w-7xl mx-auto py-10 space-y-6 mt-[3rem] ">
       <div className="grid px-[1rem] grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 sticky top-[10rem]">
           <div>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold">Properties</h2>
@@ -24,11 +24,21 @@ const page = async () => {
               </div>
             </div>
             {/* <PropertiesTable data={propertiesData} /> */}
-            <PropertiesTable data={propertiesData.items as { id: number; title: string; location: { address: string }; price: number; status: string }[]} />
+            <PropertiesTable
+              data={
+                propertiesData.items as {
+                  id: number;
+                  title: string;
+                  location: { address: string };
+                  price: number;
+                  status: string;
+                }[]
+              }
+            />
           </div>
           {/* <PropertyTables /> */}
         </div>
-        <div className="md:col-span-1">
+        <div className="md:col-span-1 max-h-[calc(100vh-7rem)] overflow-y-auto border-l border-black/20 px-4">
           <PropertyForm />
         </div>
       </div>

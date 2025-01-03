@@ -25,6 +25,7 @@ interface WaitlistTableProps {
 const WaitlistTable = ({ data }: WaitlistTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
   const itemsPerPage = 10;
 
   const filteredData = data.filter((item) =>
@@ -35,11 +36,26 @@ const WaitlistTable = ({ data }: WaitlistTableProps) => {
     )
   );
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const paginatedData = filteredData.slice(
+  const sortedData = [...filteredData].sort((a, b) => {
+    if (!sortDirection) return 0;
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+  });
+
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const paginatedData = sortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  const toggleSort = () => {
+    setSortDirection(curr => {
+      if (curr === null) return 'asc';
+      if (curr === 'asc') return 'desc';
+      return null;
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -58,8 +74,12 @@ const WaitlistTable = ({ data }: WaitlistTableProps) => {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
-            {/* <TableHead>Phone</TableHead> */}
-            <TableHead>Date</TableHead>
+            <TableHead 
+              className="cursor-pointer hover:bg-gray-50"
+              onClick={toggleSort}
+            >
+              Date {sortDirection === 'asc' ? '↑' : sortDirection === 'desc' ? '↓' : ''}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -67,7 +87,6 @@ const WaitlistTable = ({ data }: WaitlistTableProps) => {
             <TableRow key={item.id}>
               <TableCell>{item.name}</TableCell>
               <TableCell>{item.email}</TableCell>
-              {/* <TableCell>{item.phone}</TableCell> */}
               <TableCell>
                 {new Date(item.createdAt).toLocaleDateString()}
               </TableCell>

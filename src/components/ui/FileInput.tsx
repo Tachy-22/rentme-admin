@@ -169,23 +169,19 @@ export function FileInput({
 
     setFiles((prev) => [...prev, ...filesToUpload]);
 
-    for (const fileData of filesToUpload) {
+    const uploadPromises = filesToUpload.map(async (fileData) => {
       const error = validateFile(fileData.file);
       if (error) {
         onError?.(error);
         setFiles((prev) =>
           prev.map((f) => (f.file === fileData.file ? { ...f, error } : f))
         );
-        continue;
+        return null;
       }
 
       try {
-        // Initialize progress at 0
         let currentProgress = 0;
-
-        // Create a more predictable progress simulation
         const progressInterval = setInterval(() => {
-          // Increment by 1 until 90%
           if (currentProgress < 90) {
             currentProgress += 1;
             setFiles((prev) =>
@@ -196,11 +192,10 @@ export function FileInput({
               )
             );
           }
-        }, 50); // Update every 50ms for smooth animation
+        }, 50);
 
         const buffer = await fileData.file.arrayBuffer();
 
-        // Set to 95% when file is read
         setFiles((prev) =>
           prev.map((f) =>
             f.file === fileData.file ? { ...f, progress: 95 } : f
@@ -224,8 +219,8 @@ export function FileInput({
             )
           );
           onError?.(result.error as string);
+          return null;
         } else {
-          // Set to 100% when complete
           setFiles((prev) =>
             prev.map((f) =>
               f.file === fileData.file
@@ -234,29 +229,16 @@ export function FileInput({
             )
           );
 
-          const completedFiles = files
-            .filter((f) => f.url)
-            .map((f) => ({
-              url: f.url as string,
-              name: f.file.name,
-              size: f.file.size,
-              type: f.file.type,
-              lastModified: f.file.lastModified,
-            }));
-
-          const newFileMetadata: FileMetadata = {
+          return {
             url: result.url,
             name: fileData.file.name,
             size: fileData.file.size,
             type: fileData.file.type,
             lastModified: fileData.file.lastModified,
-          };
-
-          onUploadComplete?.([...completedFiles, newFileMetadata]);
+          } as FileMetadata;
         }
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Upload failed";
+        const errorMessage = err instanceof Error ? err.message : "Upload failed";
         setFiles((prev) =>
           prev.map((f) =>
             f.file === fileData.file
@@ -265,7 +247,27 @@ export function FileInput({
           )
         );
         onError?.(errorMessage);
+        return null;
       }
+    });
+
+    const results = await Promise.all(uploadPromises);
+    const uploadResults = results.filter((result): result is FileMetadata => result !== null);
+
+    // Get all existing completed files
+    const existingFiles = files
+      .filter((f) => f.url)
+      .map((f) => ({
+        url: f.url as string,
+        name: f.file.name,
+        size: f.file.size,
+        type: f.file.type,
+        lastModified: f.file.lastModified,
+      }));
+
+    // Combine existing files with new upload results
+    if (uploadResults.length > 0) {
+      onUploadComplete?.([...existingFiles, ...uploadResults]);
     }
   };
 
@@ -320,7 +322,7 @@ export function FileInput({
               animate={{ opacity: 1, y: 0 }}
               className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-all"
             >
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-4 w-full">
                 {isImageType(file.file.type) && file.url ? (
                   <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-50">
                     <img
@@ -333,10 +335,12 @@ export function FileInput({
                   <FileTypeIcon file={file.file} />
                 )}
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <p className="font-medium truncate">{file.file.name}</p>
+                <div className="flex-1 min-w-0 w-fit overflow-hiddn text-ellipsis">
+                  <div className="flex justify-between items-start w-full">
+                    <div className="space-y-1 w-full overflow-hidden text-ellipsis">
+                      <p className="font-medium truncate w-fit text-ellipsis ">
+                        <span className="text-ellipsis">{file.file.name}</span>
+                      </p>
                       <div className="flex items-center text-sm text-gray-500 space-x-2">
                         <span>{formatFileSize(file.file.size)}</span>
                         <span>•</span>

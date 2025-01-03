@@ -10,7 +10,7 @@ const page = async () => {
   }
 
   return (
-    <div className="container mx-auto py-10 mt-[3rem]">
+    <div className=" mx-auto py-10 mt-[3rem] h-full overflow-y-auto">
       <Dashboard
         waitlistData={
           waitlistData.items as {

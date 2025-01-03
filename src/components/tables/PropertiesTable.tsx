@@ -62,7 +62,7 @@ const PropertiesTable = ({ data }: PropertiesTableProps) => {
             <TableRow key={item.id}>
               <TableCell>{item.title}</TableCell>
               <TableCell>{item.location.address}</TableCell>
-              <TableCell> N{item.price}</TableCell>
+              <TableCell> ₦{item.price}</TableCell>
               <TableCell>{item.status}</TableCell>
             </TableRow>
           ))}
